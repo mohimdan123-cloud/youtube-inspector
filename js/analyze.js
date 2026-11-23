@@ -39,6 +39,17 @@ export function limitsFrom(info, order) {
   };
 }
 
+/** Turns the backend's list of failed attempts into one plain sentence. */
+export function failHint(attempts) {
+  if (!Array.isArray(attempts) || !attempts.length) return '';
+  const rejected = [...new Set(attempts.filter((x) => x.status === 401 || x.status === 403).map((x) => x.provider))];
+  if (rejected.length === attempts.length || (rejected.length && rejected.length === new Set(attempts.map((x) => x.provider)).size)) {
+    return `The AI provider${rejected.length > 1 ? 's' : ''} rejected the key (${rejected.join(', ')}). The key may be wrong, expired or switched off. Create a new one and update it on the backend.`;
+  }
+  if (rejected.length) return `All free AI providers failed. ${rejected.join(', ')} rejected the key, and the others did not answer. Check that key, then try again.`;
+  return '';
+}
+
 /** One LLM "runner": retries, waits out rate limits, and remembers which models answered. */
 export function makeRunner({ api, order, onProgress = () => {}, sleep = sleepDefault, signal }) {
   const used = new Map();
@@ -81,7 +92,7 @@ export function makeRunner({ api, order, onProgress = () => {}, sleep = sleepDef
           await sleep(3000);
           continue;
         }
-        throw new AppError('failed', 'All the free AI providers failed just now. Try again in a minute.', d.attempts || d.detail);
+        throw new AppError('failed', failHint(d.attempts) || 'All the free AI providers failed just now. Try again in a minute.', d.attempts || d.detail);
       }
       throw new AppError('bad_request', d.detail || 'The backend refused the request.', d);
     }

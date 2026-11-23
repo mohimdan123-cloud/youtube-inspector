@@ -39,6 +39,17 @@ export function limitsFrom(info, order) {
   };
 }
 
+/** Reads the backend's failed attempts for a rate limit: who is limited, and whether it is a daily cap. */
+export function quotaInfo(attempts) {
+  const list = Array.isArray(attempts) ? attempts.filter((x) => x && x.kind === 'rate') : [];
+  const who = [...new Set(list.map((x) => x.provider))].join(', ');
+  const dailyHit = (x) => /per\s?day|perday|daily|limit:\s*0\b/i.test(String(x.detail || ''));
+  // Only call it daily when every provider that was tried is out for the day.
+  const providers = [...new Set((Array.isArray(attempts) ? attempts : []).map((x) => x.provider))];
+  const dailyProviders = providers.filter((p) => list.some((x) => x.provider === p) && list.filter((x) => x.provider === p).every(dailyHit));
+  return { who, daily: providers.length && dailyProviders.length === providers.length ? dailyProviders : null };
+}
+
 /** Turns the backend's list of failed attempts into one plain sentence. */
 export function failHint(attempts) {
   if (!Array.isArray(attempts) || !attempts.length) return '';
@@ -68,9 +79,11 @@ export function makeRunner({ api, order, onProgress = () => {}, sleep = sleepDef
         return d;
       }
       if (status === 429) {
+        const q = quotaInfo(d.attempts);
+        if (q.daily) throw new AppError('busy', `The free daily quota is used up (${q.daily.join(', ')}). It resets about once a day, or add another provider key.`, d.attempts);
         const wait = clamp(Math.ceil(d.retryAfter || 15), 1, 60) + 1;
-        if (waited + wait > maxWait) throw new AppError('busy', 'The free AI quota is used up for the moment. Try again in a few minutes.', d.attempts);
-        onProgress({ note: `Free quota is busy, waiting ${wait}s...` });
+        if (waited + wait > maxWait) throw new AppError('busy', `The free AI quota is used up for the moment${q.who ? ' (' + q.who + ')' : ''}. Try again in a few minutes.`, d.attempts);
+        onProgress({ note: `Free quota is busy${q.who ? ' (' + q.who + ')' : ''}, waiting ${wait}s...` });
         await sleep(wait * 1000);
         waited += wait;
         onProgress({ note: '' });
@@ -236,7 +249,7 @@ async function analyzeByWatching(runner, ctx, lang, limits, progress) {
     const end = n === 1 ? null : Math.min(dur, (i + 1) * WIN);
     progress(n === 1 ? 'Gemini is watching the video...' : `Gemini is watching part ${i + 1} of ${n}...`, 0.1 + 0.75 * (i / n));
     const prompt = P.promptVideoWindow({ ctx, index: i, total: n, windowStart: start, windowEnd: end, lang });
-    const video = { url };
+    const video = { url, fps: 0.5 }; // speech carries the content, so fewer frames saves free quota
     if (start != null) {
       video.startSec = start;
       video.endSec = end;

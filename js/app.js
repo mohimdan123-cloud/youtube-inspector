@@ -75,7 +75,7 @@ window.addEventListener('popstate', (e) => {
 function renderHome() {
   const s = state.settings;
   $('#setup-card').hidden = !!normalizeBackend(s.backend);
-  const names = { gemini: 'Gemini', groq: 'Groq', openrouter: 'OpenRouter' };
+  const names = { gemini: 'Gemini', cloudflare: 'Cloudflare AI', groq: 'Groq', openrouter: 'OpenRouter' };
   const text = s.provider === 'auto' ? 'Model: Auto (Gemini first, then Groq)' : `Model: ${names[s.provider]} only`;
   clear($('#model-line')).append(h('span', { class: 'dot-live' }), h('span', {}, text));
   renderRecent();
@@ -700,7 +700,7 @@ function renderSettings() {
   const backend = h('input', { class: 'input', id: 's-backend', type: 'url', inputmode: 'url', autocapitalize: 'none', autocorrect: 'off', spellcheck: 'false', placeholder: 'https://tube-inspector-backend.yourname.workers.dev', value: s.backend });
   const token = h('input', { class: 'input', id: 's-token', type: 'password', autocomplete: 'off', autocapitalize: 'none', placeholder: 'The APP_TOKEN you set on the backend', value: s.token });
   const lang = select('s-lang', s.lang, [['auto', 'Same language as the video'], ['en', 'English'], ['ar', 'العربية (Arabic)']]);
-  const provider = select('s-provider', s.provider, [['auto', 'Auto (Gemini, then Groq, then OpenRouter)'], ['gemini', 'Gemini only'], ['groq', 'Groq only'], ['openrouter', 'OpenRouter only']]);
+  const provider = select('s-provider', s.provider, [['auto', 'Auto (Gemini, Cloudflare AI, Groq, OpenRouter)'], ['gemini', 'Gemini only'], ['cloudflare', 'Cloudflare AI only'], ['groq', 'Groq only'], ['openrouter', 'OpenRouter only']]);
   const theme = select('s-theme', s.theme, [['dark', 'Dark'], ['system', 'Follow the phone setting']]);
   const video = h('input', { type: 'checkbox', id: 's-video', role: 'switch' });
   video.checked = s.useVideo !== false;

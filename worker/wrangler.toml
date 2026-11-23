@@ -1,0 +1,15 @@
+name = "tube-inspector-backend"
+main = "worker.js"
+compatibility_date = "2025-11-01"
+
+# Secrets are NOT stored here. Add them with:
+#   npx wrangler secret put APP_TOKEN
+#   npx wrangler secret put GEMINI_API_KEY
+#   npx wrangler secret put GROQ_API_KEY
+#   npx wrangler secret put OPENROUTER_API_KEY   (optional)
+
+[vars]
+# Your GitHub Pages address, so other websites cannot call your backend.
+# Example: "https://yourname.github.io"
+ALLOWED_ORIGIN = "*"
+PROVIDER_ORDER = "gemini,groq,openrouter"

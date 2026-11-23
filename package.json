@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Phone-first YouTube summarizer: static PWA plus a small Cloudflare Worker backend.",
   "scripts": {
-    "test": "node tests/run.mjs"
+    "test": "node tests/run.mjs && node tests/server-smoke.mjs",
+    "start": "node server.mjs --open"
   }
 }
